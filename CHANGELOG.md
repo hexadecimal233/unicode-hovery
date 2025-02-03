@@ -1,8 +1,9 @@
 # Change Log
 
-All notable changes to the "unicode-hovery" extension will be documented in this file.
+## [0.1.0] (TODO)
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+- Added configurable underline
+- Added icon
 
 ## [0.0.1]
 

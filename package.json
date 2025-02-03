@@ -1,8 +1,14 @@
 {
   "name": "unicode-hovery",
-  "displayName": "unicode-hovery",
+  "displayName": "Unicode Hovery",
   "description": "Display a hovering tooltip on and underline under escaped unicode/hexadecimal sequences.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hexadecimal233/unicode-hovery"
+  },
+  "publisher": "hexzii",
   "version": "0.0.1",
+  "icon": "assets/icon.png",
   "engines": {
     "vscode": "^1.96.0"
   },
