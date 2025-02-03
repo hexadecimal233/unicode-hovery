@@ -7,7 +7,7 @@
     "url": "https://github.com/hexadecimal233/unicode-hovery"
   },
   "publisher": "hexzii",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "icon": "assets/icon.png",
   "engines": {
     "vscode": "^1.96.0"
@@ -24,7 +24,7 @@
     "configuration": {
       "title": "Unicode Hovery Settings",
       "properties": {
-        "unicode-hovery.languages": {
+        "unicodeHovery.languages": {
           "type": "array",
           "items": {
             "type": "string"
@@ -33,9 +33,25 @@
             "*"
           ],
           "description": "Languages in which the extension should be enabled."
+        },
+        "unicodeHovery.underline": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to show underline under escaped unicode/hexadecimal sequences."
         }
       }
-    }
+    },
+    "colors": [
+      {
+        "id": "unicodeHovery.underline",
+        "description": "The color of the underline under escaped unicode/hexadecimal sequences.",
+        "defaults": {
+          "dark": "#ffdd97aa",
+          "light": "#73ab68",
+          "highContrast": "#1eff4f"
+        }
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "pnpm run compile",

@@ -1,75 +1,80 @@
 import * as vscode from "vscode";
+import * as utils from "./utils";
 
+// precompiled regex
 const recognitionRegEx =
-  /(\\u(?:\{[\dA-Fa-f]{1,6}\}|[\dA-Fa-f]{4}))|(\\x[\dA-Fa-f]{2})|(U+[\dA-F]{1-6})/; // Escaped Unicode | Escaped Hex | Unicode Codepoint
+  /(\\u(?:\{[\dA-Fa-f]{1,6}\}|[\dA-Fa-f]{4})|\\x[\dA-Fa-f]{2}|U\+[\dA-F]{1,6})/; // Escaped Unicode | Escaped Hex | Unicode Codepoint
 const wholeWordRegEx =
-  /((\\u(?:\{[\dA-Fa-f]{1,6}\}|[\dA-Fa-f]{4}))|(\\x[\dA-Fa-f]{2})|(U+[\dA-F]{1-6}))+/; // Escaped Unicode | Escaped Hex | Unicode Codepoint
-const extractRegEx = /[\dA-Fa-f]+/;
-
-let languages = vscode.workspace
-  .getConfiguration("unicode-hovery")
-  .get<string[]>("languages", ["*"]);
+  /(\\u(?:\{[\dA-Fa-f]{1,6}\}|[\dA-Fa-f]{4})|\\x[\dA-Fa-f]{2}|U\+[\dA-F]{1,6})+/g; // match long sequences
 
 export function activate(context: vscode.ExtensionContext) {
+  // init
+  utils.config.update();
+  updateDecorations();
+
   const configListener = vscode.workspace.onDidChangeConfiguration((e) => {
-    if (e.affectsConfiguration("unicode-hovery")) {
-      languages = vscode.workspace
-        .getConfiguration("unicode-hovery")
-        .get<string[]>("languages", ["*"]);
-      vscode.window.showInformationMessage("Unicode Hovery reloaded");
+    if (e.affectsConfiguration("unicodeHovery")) {
+      utils.config.update();
+      updateDecorations();
     }
   });
 
-  const hoverProvider = vscode.languages.registerHoverProvider(["*"], {
-    provideHover: unescapedHover,
-  });
-
-  context.subscriptions.push(hoverProvider);
-  context.subscriptions.push(configListener);
+  context.subscriptions.push(
+    // update decos when tab / content changes
+    vscode.window.onDidChangeActiveTextEditor(updateDecorations),
+    vscode.workspace.onDidChangeTextDocument(updateDecorations),
+    configListener
+  );
 }
 
-export function deactivate() {}
-
-function unescapedHover(
-  document: vscode.TextDocument,
-  position: vscode.Position
-) {
-  if (document.languageId !== "*" && !languages.includes("*")) {
+function updateDecorations() {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
     return;
   }
 
-  const range = document.getWordRangeAtPosition(position, wholeWordRegEx);
-  if (range) {
-    // Start from the position where the cursor is
-    let pointer = range.start;
+  const document = editor.document;
+
+  // clear if languages does not match
+  if (!utils.config.checkLanguages(document.languageId)) {
+    editor.setDecorations(utils.config.underlineDecoType, []);
+    return;
+  }
+
+  const text = document.getText();
+  const decoOptions: vscode.DecorationOptions[] = [];
+
+  let match;
+  while ((match = wholeWordRegEx.exec(text)) !== null) {
+    const start = document.positionAt(match.index);
+    const end = document.positionAt(match.index + match[0].length);
+
+    // start from the position where the cursor is
+    let pointer = start;
     let text: string[] = [];
 
-    while (pointer.character < range.end.character) {
+    // get the whole sequence
+    while (pointer.isBefore(end)) {
       const range_ = document.getWordRangeAtPosition(pointer, recognitionRegEx);
       if (range_) {
         text.push(document.getText(range_));
-        pointer = range_.end.translate(0, 1); // move to the next character
+        pointer = range_.end.translate(0, 1);
       } else {
         break;
       }
     }
 
-    let result = text.map((t) => escapeUnicode(t)).join("");
+    const result = text.map((t) => utils.escapeUnicode(t)).join("");
 
-    return new vscode.Hover(`Unescaped: ${result}`);
+    decoOptions.push({
+      range: new vscode.Range(start, end),
+      hoverMessage: `Unescaped: ${result}`,
+    });
   }
+
+  editor.setDecorations(utils.config.underlineDecoType, decoOptions);
 }
 
-// unescape into readable text
-function escapeUnicode(str: string) {
-  const unescaped = extractRegEx.exec(str);
-  if (unescaped) {
-    const codePoint = parseInt(unescaped[0], 16);
-    // valid?
-    if (0x0 <= codePoint && codePoint <= 0x10ffff) {
-      return String.fromCodePoint(codePoint); // convert from hex
-    }
-  }
-
-  return str; // fallback
+export function deactivate() {
+  // ...
 }
