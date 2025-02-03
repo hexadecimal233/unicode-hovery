@@ -3,9 +3,13 @@ import * as utils from "./utils";
 
 // precompiled regex
 const recognitionRegEx =
-  /(\\u(?:\{[\dA-Fa-f]{1,6}\}|[\dA-Fa-f]{4})|\\x[\dA-Fa-f]{2}|U\+[\dA-F]{1,6})/; // Escaped Unicode | Escaped Hex | Unicode Codepoint
+  /\\u(?:\{[\dA-Fa-f]{1,6}\}|[\dA-Fa-f]{4})|\\x[\dA-Fa-f]{2}|U\+[\dA-F]{1,6}/g; // Escaped Unicode | Escaped Hex | Unicode Codepoint
 const wholeWordRegEx =
   /(\\u(?:\{[\dA-Fa-f]{1,6}\}|[\dA-Fa-f]{4})|\\x[\dA-Fa-f]{2}|U\+[\dA-F]{1,6})+/g; // match long sequences
+
+let timer: NodeJS.Timeout | null = null;
+
+// TODO: Add a command to convert hexadecimal bits to unicode
 
 export function activate(context: vscode.ExtensionContext) {
   // init
@@ -21,13 +25,23 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     // update decos when tab / content changes
-    vscode.window.onDidChangeActiveTextEditor(updateDecorations),
-    vscode.workspace.onDidChangeTextDocument(updateDecorations),
+    vscode.window.onDidChangeActiveTextEditor(triggerUpdate),
+    vscode.workspace.onDidChangeTextDocument(triggerUpdate),
     configListener
   );
 }
 
+// refresh ratelimit
+function triggerUpdate() {
+  if (timer) {
+    clearTimeout(timer);
+  }
+
+  timer = setTimeout(updateDecorations, 200);
+}
+
 function updateDecorations() {
+  console.log("updateDecorations");
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     return;
@@ -49,22 +63,11 @@ function updateDecorations() {
     const start = document.positionAt(match.index);
     const end = document.positionAt(match.index + match[0].length);
 
-    // start from the position where the cursor is
-    let pointer = start;
-    let text: string[] = [];
-
-    // get the whole sequence
-    while (pointer.isBefore(end)) {
-      const range_ = document.getWordRangeAtPosition(pointer, recognitionRegEx);
-      if (range_) {
-        text.push(document.getText(range_));
-        pointer = range_.end.translate(0, 1);
-      } else {
-        break;
-      }
-    }
-
-    const result = text.map((t) => utils.escapeUnicode(t)).join("");
+    // get all subcharacters
+    const result = match[0]
+      .match(recognitionRegEx)
+      ?.map((t) => utils.escapeUnicode(t))
+      .join("");
 
     decoOptions.push({
       range: new vscode.Range(start, end),
