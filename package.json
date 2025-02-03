@@ -1,7 +1,7 @@
 {
   "name": "unicode-hovery",
   "displayName": "unicode-hovery",
-  "description": "Display a hovering tooltip on and underline under escaped unicode/hexadecimal sequences!",
+  "description": "Display a hovering tooltip on and underline under escaped unicode/hexadecimal sequences.",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.96.0"
