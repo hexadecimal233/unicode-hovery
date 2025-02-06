@@ -10,4 +10,7 @@ vsc-extension-quickstart.md
 **/*.ts
 **/.vscode-test.*
 pnpm-lock.yaml
-/readme
+
+readme/**
+out/test/**
+test/**

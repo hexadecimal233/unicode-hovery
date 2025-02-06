@@ -3,13 +3,11 @@ import * as utils from "./utils";
 
 // precompiled regex
 const recognitionRegEx =
-  /\\u(?:\{[\dA-Fa-f]{1,6}\}|[\dA-Fa-f]{4})|\\x[\dA-Fa-f]{2}|U\+[\dA-F]{1,6}/g; // Escaped Unicode | Escaped Hex | Unicode Codepoint
+  /\\u(?:\{[0-9A-Fa-f]{1,6}\}|[0-9A-Fa-f]{4})|\\x[0-9A-Fa-f]{2}|U\+[0-9A-F]{1,6}/g; // Escaped Unicode | Escaped Hex | Unicode Codepoint
 const wholeWordRegEx =
-  /(\\u(?:\{[\dA-Fa-f]{1,6}\}|[\dA-Fa-f]{4})|\\x[\dA-Fa-f]{2}|U\+[\dA-F]{1,6})+/g; // match long sequences
+  /(\\u(?:\{[0-9A-Fa-f]{1,6}\}|[0-9A-Fa-f]{4})|\\x[0-9A-Fa-f]{2}|U\+[0-9A-F]{1,6})+/g; // match long sequences
 
 let timer: NodeJS.Timeout | null = null;
-
-// TODO: Add a command to convert hexadecimal bits to unicode
 
 export function activate(context: vscode.ExtensionContext) {
   // init
@@ -23,12 +21,105 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
+  // Commands section
+
+  let commands = [
+    vscode.commands.registerCommand("unicodeHovery.toCharacters", () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        return;
+      }
+
+      let edits: { range: vscode.Range; result?: string }[] = [];
+
+      for (let selection of editor.selections) {
+        const range = editor.document.getWordRangeAtPosition(
+          selection.start,
+          wholeWordRegEx
+        );
+
+        if (range) {
+          const text = editor.document.getText(range);
+          const result = text
+            .match(recognitionRegEx)
+            ?.map((t) => utils.escapeUnicode(t))
+            .join("");
+
+          edits.push({ range, result });
+        }
+      }
+
+      editor.edit((edit) => {
+        edits.forEach(({ range, result }) => {
+          edit.replace(range, `${result}`);
+        });
+      });
+    }),
+
+    vscode.commands.registerCommand(
+      "unicodeHovery.toUnicode",
+      genCommand(false, true, false)
+    ),
+    vscode.commands.registerCommand(
+      "unicodeHovery.toUnicodeWOAscii",
+      genCommand(true, true, false)
+    ),
+    vscode.commands.registerCommand(
+      "unicodeHovery.toUnicodeNoSurrogate",
+      genCommand(false, false, false)
+    ),
+    vscode.commands.registerCommand(
+      "unicodeHovery.toUnicodeWOAsciiNoSurrogate",
+      genCommand(true, false, false)
+    ),
+    vscode.commands.registerCommand(
+      "unicodeHovery.toUtf8",
+      genCommand(true, true, true)
+    ),
+  ];
+
+  // Register commands
+  commands.forEach((c) => context.subscriptions.push(c));
+
   context.subscriptions.push(
     // update decos when tab / content changes
     vscode.window.onDidChangeActiveTextEditor(triggerUpdate),
     vscode.workspace.onDidChangeTextDocument(triggerUpdate),
     configListener
   );
+}
+
+function genCommand(
+  ignoreAscii: boolean,
+  includeSurrogate: boolean,
+  utf8: boolean
+) {
+  return () => {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return;
+    }
+
+    let edits: { range: vscode.Range; result?: string }[] = [];
+
+    for (let selection of editor.selections) {
+      const range = new vscode.Range(selection.start, selection.end);
+
+      const text = editor.document.getText(range);
+      const result = utils.toUnicode(
+        utils.toUnicodeArray(text, includeSurrogate),
+        ignoreAscii,
+        utf8
+      );
+      edits.push({ range, result });
+    }
+
+    editor.edit((edit) => {
+      edits.forEach(({ range, result }) => {
+        edit.replace(range, `${result}`);
+      });
+    });
+  };
 }
 
 // refresh ratelimit
@@ -41,7 +132,6 @@ function triggerUpdate() {
 }
 
 function updateDecorations() {
-  console.log("updateDecorations");
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     return;

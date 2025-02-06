@@ -7,7 +7,7 @@
     "url": "https://github.com/hexadecimal233/unicode-hovery"
   },
   "publisher": "hexzii",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "icon": "assets/icon.png",
   "engines": {
     "vscode": "^1.96.0"
@@ -20,7 +20,38 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [],
+    "commands": [
+      {
+        "command": "unicodeHovery.toCharacters",
+        "title": "Convert unicode sequences to characters",
+        "category": "Unicode Hovery"
+      },
+      {
+        "command": "unicodeHovery.toUnicode",
+        "title": "Convert characters to unicode sequences. (Surrogate included)",
+        "category": "Unicode Hovery"
+      },
+      {
+        "command": "unicodeHovery.toUnicodeWOAscii",
+        "title": "Convert characters to unicode sequences. (ASCII ignored, surrogate included)",
+        "category": "Unicode Hovery"
+      },
+      {
+        "command": "unicodeHovery.toUnicodeNoSurrogate",
+        "title": "Convert characters to unicode sequences. (Surrogate dismantled)",
+        "category": "Unicode Hovery"
+      },
+      {
+        "command": "unicodeHovery.toUnicodeWOAsciiNoSurrogate",
+        "title": "Convert characters to unicode sequences. (ASCII ignored, surrogate dismantled)",
+        "category": "Unicode Hovery"
+      },
+      {
+        "command": "unicodeHovery.toUtf8",
+        "title": "Convert characters to UTF-8 byte sequences.",
+        "category": "Unicode Hovery"
+      }
+    ],
     "configuration": {
       "title": "Unicode Hovery Settings",
       "properties": {
