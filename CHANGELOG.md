@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.1.2]
+
+Added a shorthand command to convert all characters to unicode sequences
+
 ## [0.1.1]
 
 - Shrinked the extension size

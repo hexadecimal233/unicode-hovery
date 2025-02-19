@@ -56,6 +56,41 @@ export function activate(context: vscode.ExtensionContext) {
       });
     }),
 
+    vscode.commands.registerCommand("unicodeHovery.convertDocument", () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        return;
+      }
+
+      let edits: { range: vscode.Range; result?: string }[] = [];
+
+      const document = editor.document;
+      const text = editor.document.getText();
+
+      let match;
+      while ((match = wholeWordRegEx.exec(text)) !== null) {
+        const start = document.positionAt(match.index);
+        const end = document.positionAt(match.index + match[0].length);
+
+        // get all subcharacters
+        const result = match[0]
+          .match(recognitionRegEx)
+          ?.map((t) => utils.escapeUnicode(t))
+          .join("");
+
+        edits.push({
+          range: new vscode.Range(start, end),
+          result,
+        });
+      }
+
+      editor.edit((edit) => {
+        edits.forEach(({ range, result }) => {
+          edit.replace(range, `${result}`);
+        });
+      });
+    }),
+
     vscode.commands.registerCommand(
       "unicodeHovery.toUnicode",
       genCommand(false, true, false)

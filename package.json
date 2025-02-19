@@ -7,7 +7,7 @@
     "url": "https://github.com/hexadecimal233/unicode-hovery"
   },
   "publisher": "hexzii",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "icon": "assets/icon.png",
   "engines": {
     "vscode": "^1.96.0"
@@ -23,7 +23,12 @@
     "commands": [
       {
         "command": "unicodeHovery.toCharacters",
-        "title": "Convert unicode sequences to characters",
+        "title": "Convert unicode sequences to characters at cursor location",
+        "category": "Unicode Hovery"
+      },
+      {
+        "command": "unicodeHovery.convertDocument",
+        "title": "Convert all unicode sequences in the document to characters",
         "category": "Unicode Hovery"
       },
       {
